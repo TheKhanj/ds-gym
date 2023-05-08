@@ -15,9 +15,9 @@ typedef struct vec_t {
 } vec_t;
 
 static void vec_init(vec_t *vec) {
-	vec->max_size = 256;
+	vec->max_size = 1;
 	vec->size = 0;
-	vec->arr = malloc(256 * sizeof(void *));
+	vec->arr = malloc(1 * sizeof(void *));
 }
 
 static void vec_push(vec_t *vec, void *data) {
