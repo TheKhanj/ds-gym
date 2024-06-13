@@ -1,10 +1,9 @@
 // This still gets TLE. I really don't know what the solution is.
 #include <cinttypes>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <unordered_map>
-
-std::unordered_map<uint64_t, uint64_t> cnt;
 
 inline uint64_t hash(char *s) {
 	char c;
@@ -15,7 +14,8 @@ inline uint64_t hash(char *s) {
 	return ret;
 }
 
-inline void init_map(char *s, int n) {
+inline void init_map(char *s, int n,
+										 std::unordered_map<uint64_t, std::size_t> &cnt) {
 	for (int i = 0; i < n; i++) {
 		uint64_t h = 0;
 		for (int sz = 0; i + sz < n; sz++) {
@@ -33,8 +33,9 @@ int main() {
 	scanf("%s", s);
 
 	char query[500000 + 1];
+	std::unordered_map<uint64_t, std::size_t> cnt(n * n * 5);
 
-	init_map(s, n);
+	init_map(s, n, cnt);
 
 	while (t--) {
 		scanf("%s", query);
