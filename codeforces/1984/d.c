@@ -60,6 +60,7 @@ void test(char *s, int n) {
 	for (int t = 1; t + nona[0] <= n; t++) {
 		if (!check(n, z, t, nona))
 			continue;
+		printf("%d\n", t);
 
 		int l = 0, r = nona[0];
 		int dis = nona[0];
