@@ -1,27 +1,21 @@
 #include <stdio.h>
+#include <string.h>
 
-void solve() {
-	int n;
-	scanf("%d", &n);
-	int len = 0, maxlen = 0;
-	while (n--) {
-		int x;
-		scanf("%d", &x);
-		if (x == 0)
-			len++;
-		else
-			len = 0;
-		if (len > maxlen) {
-			maxlen = len;
-		}
+int get_diff(char *s) {
+	char cf[] = "codeforces";
+	int ret = 0, len = strlen(cf);
+	for (int i = 0; i < len; i++) {
+		ret += cf[i] != s[i];
 	}
-	printf("%d\n", maxlen);
+	return ret;
 }
 
 int main() {
 	int t;
 	scanf("%d", &t);
 	while (t--) {
-		solve();
+		char s[11];
+		scanf("%s", s);
+		printf("%d\n", get_diff(s));
 	}
 }
