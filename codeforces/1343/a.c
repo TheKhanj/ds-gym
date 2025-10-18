@@ -1,30 +1,28 @@
-#include <stdint.h>
 #include <stdio.h>
 
-void solve() {
-	int n;
-	scanf("%d", &n);
-	if (n % 4 != 0) {
-		printf("NO\n");
-		return;
-	}
+long long p[50];
 
-	printf("YES\n");
-
-	for (int i = 0; i < n / 2; ++i) {
-		printf("%d ", 2 * i + 2);
+int solve(int n) {
+	for (int k = 2; p[k] - 1 <= n; k++) {
+		if (n % (p[k] - 1) == 0)
+			return n / (p[k] - 1);
 	}
+	return -1;
+}
 
-	for (int i = 0; i < (n / 2) - 1; ++i) {
-		printf("%d ", 2 * i + 1);
-	}
-	printf("%d\n", n + (n / 2) - 1);
+void init_pow() {
+	p[0] = 1;
+	for (int i = 1; i < 50; i++)
+		p[i] = 2 * p[i - 1];
 }
 
 int main() {
 	int t;
 	scanf("%d", &t);
+	init_pow();
 	while (t--) {
-		solve();
+		int n;
+		scanf("%d", &n);
+		printf("%d\n", solve(n));
 	}
 }
