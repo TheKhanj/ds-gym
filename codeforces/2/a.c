@@ -4,10 +4,11 @@
 #include <string.h>
 
 #define MAX_N 1000
+#define MAX_NAME 32
 
 typedef struct map_t {
 	size_t size;
-	char names[MAX_N][33];
+	char names[MAX_N][MAX_NAME + 1];
 	int scores[MAX_N];
 } map_t;
 
@@ -44,14 +45,14 @@ int main() {
 	int n;
 	scanf("%d", &n);
 
-	char names[n][33];
+	char names[n][MAX_NAME + 1];
 	int scores[n];
 
 	map_t mp;
 	map_init(&mp);
 
 	for (int i = 0; i < n; i++) {
-		char name[33];
+		char name[MAX_NAME + 1];
 		int score;
 		scanf("%s %d", name, &score);
 
@@ -65,7 +66,7 @@ int main() {
 
 	int max_score = 0;
 	for (int i = 0; i < n; i++) {
-		char name[33];
+		char name[MAX_NAME + 1];
 
 		strcpy(name, names[i]);
 
@@ -78,7 +79,7 @@ int main() {
 	map_init(&mp2);
 
 	for (int i = 0; i < n; i++) {
-		char name[33];
+		char name[MAX_NAME + 1];
 		int score;
 
 		strcpy(name, names[i]);
