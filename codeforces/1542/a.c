@@ -16,6 +16,6 @@ int main() {
 			sum += x;
 		}
 
-		printf("%s\n", odd >= n && (odd - n + 1) % 2 == 1 ? "YES" : "NO");
+		printf("%s\n", odd == n ? "YES" : "NO");
 	}
 }
