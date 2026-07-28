@@ -1,32 +1,47 @@
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 
 typedef enum {
 	HEAP_OK,
 	HEAP_EMPTY,
-	HEAP_OVERFLOW,
-	HEAP_EMPTY_CAPACITY,
+	HEAP_CAPACITY_OVERFLOW,
+	HEAP_INVALID_CAPACITY,
 	HEAP_NULL_COMPARATOR,
-	HEAP_MEMORY_OVERFLOW,
+	HEAP_OUT_OF_MEMORY,
 } heap_err;
 
-typedef int (*heap_comparator)(const void *a, const void *b);
+typedef bool (*heap_comparator)(const void *a, const void *b);
 
 typedef struct heap_t {
 	void **data_arr;
-	uint32_t capacity, size;
+	size_t capacity, size;
 	heap_comparator cmp;
 } heap_t;
 
-static void heap_swap(heap_t *h, uint32_t i, uint32_t j) {
+static void heap_swap(heap_t *h, size_t i, size_t j) {
 	void *tmp = h->data_arr[i];
 	h->data_arr[i] = h->data_arr[j];
 	h->data_arr[j] = tmp;
 }
-static void heap_restore_up(heap_t *h, uint32_t node) {
+
+static heap_err heap_grow(heap_t *h) {
+	if (h->capacity > UINT32_MAX / 2)
+		return HEAP_CAPACITY_OVERFLOW;
+
+	h->capacity *= 2;
+	void *tmp = realloc(h->data_arr, h->capacity * sizeof(*h->data_arr));
+	if (tmp == NULL)
+		return HEAP_OUT_OF_MEMORY;
+	h->data_arr = (void **)tmp;
+	return HEAP_OK;
+}
+
+static void heap_restore_up(heap_t *h, size_t node) {
 	if (node == 0)
 		return;
-	uint32_t parent = (node - 1) / 2;
+	size_t parent = (node - 1) / 2;
 
 	if (h->cmp(h->data_arr[parent], h->data_arr[node]))
 		return;
@@ -35,10 +50,10 @@ static void heap_restore_up(heap_t *h, uint32_t node) {
 	heap_restore_up(h, parent);
 }
 
-static void heap_restore_down(heap_t *h, uint32_t node) {
-	uint32_t least = node;
-	uint32_t l = 2 * node + 1;
-	uint32_t r = 2 * node + 2;
+static void heap_restore_down(heap_t *h, size_t node) {
+	size_t least = node;
+	size_t l = 2 * node + 1;
+	size_t r = 2 * node + 2;
 
 	if (l < h->size && h->cmp(h->data_arr[l], h->data_arr[least]))
 		least = l;
@@ -52,26 +67,29 @@ static void heap_restore_down(heap_t *h, uint32_t node) {
 	heap_restore_down(h, least);
 }
 
-heap_err heap_init(heap_t *h, uint32_t capacity, heap_comparator cmp) {
+heap_err heap_init(heap_t *h, size_t capacity, heap_comparator cmp) {
 	if (cmp == NULL)
 		return HEAP_NULL_COMPARATOR;
 	if (capacity == 0)
-		return HEAP_EMPTY_CAPACITY;
+		return HEAP_INVALID_CAPACITY;
+
+	h->data_arr = (void **)malloc(sizeof(*h->data_arr) * h->capacity);
+	if (h->data_arr == NULL)
+		return HEAP_OUT_OF_MEMORY;
 
 	h->capacity = capacity;
 	h->cmp = cmp;
-	h->data_arr = (void **)malloc(sizeof(void *) * h->capacity);
-	if (h->data_arr == NULL)
-		return HEAP_MEMORY_OVERFLOW;
 	h->size = 0;
 	return HEAP_OK;
 }
+
 void heap_free(heap_t *h) {
 	free(h->data_arr);
+	*h = (heap_t){0};
 	h->data_arr = NULL;
 }
 
-uint32_t heap_size(heap_t *h) { return h->size; }
+size_t heap_size(heap_t *h) { return h->size; }
 
 void *heap_top(heap_t *h) {
 	if (h->size == 0)
@@ -81,13 +99,9 @@ void *heap_top(heap_t *h) {
 
 heap_err heap_push(heap_t *h, void *data) {
 	if (h->size == h->capacity) {
-		if (h->capacity > UINT32_MAX / 2)
-			return HEAP_OVERFLOW;
-		h->capacity *= 2;
-		void *tmp = realloc(h->data_arr, h->capacity * sizeof(void *));
-		if (tmp == NULL)
-			return HEAP_MEMORY_OVERFLOW;
-		h->data_arr = tmp;
+		heap_err err = heap_grow(h);
+		if (err != 0)
+			return err;
 	}
 
 	h->data_arr[h->size++] = data;
@@ -102,13 +116,13 @@ void *heap_pop(heap_t *h) {
 	heap_swap(h, 0, h->size - 1);
 	h->size--;
 
-	heap_restore_down(h, 0);
+	if (h->size)
+		heap_restore_down(h, 0);
 
 	return ret;
 }
 
-#ifdef TEST
-#	include <assert.h>
+#include <assert.h>
 bool int_less(const void *a, const void *b) { return *(int *)a < *(int *)b; }
 
 inline static void test_heap() {
@@ -140,4 +154,3 @@ inline static void test_heap() {
 }
 
 int main() { test_heap(); }
-#endif
