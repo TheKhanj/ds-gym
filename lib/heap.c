@@ -1,8 +1,15 @@
-#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "result.h"
+
+typedef enum {
+	HEAP_OK,
+	HEAP_EMPTY,
+	HEAP_OVERFLOW,
+	HEAP_EMPTY_CAPACITY
+} heap_err;
 typedef bool (*heap_comparator)(const void *a, const void *b);
 
 typedef struct heap_t {
@@ -16,28 +23,45 @@ static void heap_swap(heap_t *h, uint32_t i, uint32_t j) {
 	h->data_arr[i] = h->data_arr[j];
 	h->data_arr[j] = tmp;
 }
-static uint32_t heap_parent(uint32_t node) { return (node - 1) / 2; }
-static uint32_t heap_left_child(uint32_t node) { return 2 * node + 1; }
-static uint32_t heap_right_child(uint32_t node) { return 2 * node + 2; }
-static void heap_restore_up(heap_t *h, uint32_t node) {
+RESULT_TYPE(uint32_t, heap_err, heap_node);
+static result_heap_node_t heap_node_parent(heap_t *h, uint32_t node) {
 	if (node == 0)
-		return;
-	uint32_t parent = heap_parent(node);
-	if (h->cmp(h->data_arr[parent], h->data_arr[node]))
+		return heap_node_err(HEAP_OVERFLOW);
+	return heap_node_ok((node - 1) / 2);
+}
+static result_heap_node_t heap_node_left_child(heap_t *h, uint32_t node) {
+	uint32_t index = 2 * node + 1;
+	if (index >= h->size)
+		return heap_node_err(HEAP_OVERFLOW);
+	return heap_node_ok(index);
+}
+static result_heap_node_t heap_node_right_child(heap_t *h, uint32_t node) {
+	uint32_t index = 2 * node + 2;
+	if (index >= h->size)
+		return heap_node_err(HEAP_OVERFLOW);
+	return heap_node_ok(index);
+}
+static void heap_restore_up(heap_t *h, uint32_t node) {
+	result_heap_node_t parent = heap_node_parent(h, node);
+	if (parent.err != 0)
 		return;
 
-	heap_swap(h, node, parent);
-	heap_restore_up(h, parent);
+	if (h->cmp(h->data_arr[parent.value], h->data_arr[node]))
+		return;
+
+	heap_swap(h, node, parent.value);
+	heap_restore_up(h, parent.value);
 }
+
 static void heap_restore_down(heap_t *h, uint32_t node) {
-	uint32_t l = heap_left_child(node);
-	uint32_t r = heap_right_child(node);
+	result_heap_node_t l = heap_node_left_child(h, node);
+	result_heap_node_t r = heap_node_right_child(h, node);
 
 	uint32_t least = node;
-	if (l < h->size && h->cmp(h->data_arr[l], h->data_arr[least]))
-		least = l;
-	if (r < h->size && h->cmp(h->data_arr[r], h->data_arr[least]))
-		least = r;
+	if (l.err == 0 && h->cmp(h->data_arr[l.value], h->data_arr[least]))
+		least = l.value;
+	if (r.err == 0 && h->cmp(h->data_arr[r.value], h->data_arr[least]))
+		least = r.value;
 
 	if (least == node)
 		return;
@@ -47,14 +71,17 @@ static void heap_restore_down(heap_t *h, uint32_t node) {
 }
 
 // capacity is the initial capacity, it dynamically grows
-void heap_init(heap_t *h, int32_t capacity, heap_comparator cmp) {
-	assert(capacity >= 0);
+heap_err heap_init(heap_t *h, uint32_t capacity, heap_comparator cmp) {
+	if (capacity == 0)
+		return HEAP_EMPTY_CAPACITY;
 
 	h->capacity = capacity;
 	h->cmp = cmp;
 	h->data_arr = (void **)malloc(sizeof(void *) * h->capacity);
 	h->size = 0;
+	return HEAP_OK;
 }
+void heap_free(heap_t *h) { free(h->data_arr); }
 
 uint32_t heap_size(heap_t *h) { return h->size; }
 
@@ -81,6 +108,7 @@ void *heap_pop(heap_t *h) {
 }
 
 // tests
+#include <assert.h>
 bool int_less(const void *a, const void *b) { return *(int *)a < *(int *)b; }
 
 inline static void test_heap() {
